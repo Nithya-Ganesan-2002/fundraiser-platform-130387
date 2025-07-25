@@ -3,18 +3,60 @@
 //
 const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:3001";
 
-// Helper for handling API calls and JSON parsing
+/**
+ * Helper for handling API calls and JSON parsing.
+ * Improved to give clearer errors for network/backend/CORS issues.
+ */
 async function doApiCall(url, opts = {}) {
-  const res = await fetch(API_BASE + url, {
-    headers: {
-      ...opts.headers,
-      "Content-Type": opts.contentType || "application/json",
-      ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {})
-    },
-    ...opts,
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  let res;
+  try {
+    res = await fetch(API_BASE + url, {
+      headers: {
+        ...opts.headers,
+        "Content-Type": opts.contentType || "application/json",
+        ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {})
+      },
+      // Omit credentials by default unless needed, to avoid CORS issues.
+      ...opts,
+    });
+  } catch (err) {
+    // Network error, server down or not reachable
+    // Provide clear error for "Failed to fetch"/network/CORS errors
+    throw new Error(
+      "Network error: Unable to reach backend at " +
+        API_BASE +
+        ".\nError: " +
+        (err && err.message ? err.message : err) +
+        "\nPossible causes: backend is not running, wrong URL, or CORS misconfiguration."
+    );
+  }
+  // fetch completed but not OK — might have server error or still a CORS error
+  if (!res.ok) {
+    let msg = "";
+    try {
+      // Try to parse backend's text error message. If not json/text, fallback.
+      msg = await res.text();
+    } catch {
+      msg = res.statusText;
+    }
+    // Detect opaque response for CORS issues (status=0, type='opaque')
+    if (res.type === "opaque" || res.status === 0) {
+      throw new Error(
+        "CORS error: Backend did not respond as expected. " +
+          "Check that the FastAPI backend at " +
+          API_BASE +
+          " is serving and allows CORS from the frontend origin."
+      );
+    }
+    throw new Error(
+      `API error (${res.status}): ${msg || "Unknown error."}`
+    );
+  }
+  try {
+    return await res.json();
+  } catch (err) {
+    throw new Error("Unexpected response format from API (not JSON).");
+  }
 }
 
 // PUBLIC_INTERFACE
