@@ -65,7 +65,11 @@ function CampaignDetail({ user, onLogin, onDonateClick }) {
         </button>
       )}
       {user && (
-        <button className="btn" style={{ background: "#34a853", color: "#fff", marginTop: 22 }} onClick={onDonateClick}>
+        <button
+          className="btn"
+          style={{ background: "#34a853", color: "#fff", marginTop: 22 }}
+          onClick={() => onDonateClick(campaign.id)}
+        >
           Donate
         </button>
       )}

@@ -17,6 +17,8 @@ function App() {
   const [theme, setTheme] = useState("light");
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  // Maintain selected campaignId for donation modal
+  const [donationCampaignId, setDonationCampaignId] = useState(null);
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(
     window.localStorage.getItem("jwt_token") || null
@@ -79,7 +81,10 @@ function App() {
                   <CampaignDetail
                     user={user}
                     onLogin={() => setAuthModalOpen(true)}
-                    onDonateClick={() => setPaymentModalOpen(true)}
+                    onDonateClick={(cid) => {
+                      setDonationCampaignId(cid);
+                      setPaymentModalOpen(true);
+                    }}
                   />
                 }
               />
@@ -122,9 +127,13 @@ function App() {
           />
           <PaymentModal
             open={paymentModalOpen}
-            onClose={() => setPaymentModalOpen(false)}
+            onClose={() => {
+              setPaymentModalOpen(false);
+              setDonationCampaignId(null);
+            }}
             user={user}
             token={token}
+            campaignId={donationCampaignId}
           />
         </div>
       </Router>

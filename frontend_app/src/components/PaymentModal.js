@@ -1,17 +1,41 @@
 import React, { useState } from "react";
 import { donateToCampaign } from "../api";
 
-// PUBLIC_INTERFACE
+/**
+ * PaymentModal - Modal for making a donation to a campaign. 
+ * Props:
+ *   - open: whether the modal is open
+ *   - onClose: function to close the modal
+ *   - user: logged-in user object
+ *   - token: JWT token
+ *   - campaignId: id of the campaign (required for donation)
+ */
 function PaymentModal({ open, onClose, user, token, campaignId }) {
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
 
   if (!open) return null;
+
+  // If `campaignId` is not supplied, don't allow donation (runtime guard)
+  const isDonationReady = user && !!campaignId && !loading && amount && parseFloat(amount) > 0;
+
   const onDonate = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setStatus(null);
+    if (!user) {
+      setStatus("You must be logged in to donate.");
+      return;
+    }
+    if (!campaignId) {
+      setStatus("No campaign selected for donation.");
+      return;
+    }
+    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+      setStatus("Please enter a valid amount.");
+      return;
+    }
+    setLoading(true);
     try {
       await donateToCampaign({ campaign_id: campaignId, amount: parseFloat(amount) }, token);
       setStatus("Thank you for your donation!");

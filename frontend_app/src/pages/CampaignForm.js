@@ -18,15 +18,37 @@ function CampaignForm({ user, token, onLogin }) {
 
   useEffect(() => {
     if (campaignId) {
-      getCampaign(campaignId).then((c) =>
-        setForm({
-          title: c.title,
-          description: c.description ?? "",
-          goal_amount: c.goal_amount,
-          end_date: c.end_date.slice(0, 10),
-          image_url: c.image_url ?? "",
-        }),
-      );
+      async function loadCampaign() {
+        try {
+          const c = await getCampaign(campaignId);
+          if (!c || !c.title || !c.goal_amount || !c.end_date) {
+            setForm({
+              title: "",
+              description: "",
+              goal_amount: "",
+              end_date: "",
+              image_url: "",
+            });
+            return;
+          }
+          setForm({
+            title: c.title ?? "",
+            description: c.description ?? "",
+            goal_amount: c.goal_amount,
+            end_date: c.end_date ? (typeof c.end_date === "string" ? c.end_date.slice(0, 10) : "") : "",
+            image_url: c.image_url ?? "",
+          });
+        } catch (e) {
+          setForm({
+            title: "",
+            description: "",
+            goal_amount: "",
+            end_date: "",
+            image_url: "",
+          });
+        }
+      }
+      loadCampaign();
     }
   }, [campaignId]);
 
